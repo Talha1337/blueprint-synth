@@ -205,17 +205,19 @@ class Blueprint:
             for inf, edge in edges:
                 source_raw = df[inf.source].values
                 target_col = df[feat_name].values.astype(float)
-                source_col = source_raw.astype(float) if source_raw.dtype != object else source_raw
+                source_col = (
+                    source_raw.astype(float)
+                    if pd.api.types.is_numeric_dtype(source_raw)
+                    else source_raw
+                )
 
                 base_mask = np.ones(self.n, dtype=bool)
 
                 if edge["when"] is not None:
                     base_mask &= self._resolve_condition(edge["when"], df)
 
-                if source_raw.dtype == bool or (
-                    hasattr(source_raw, 'dtype') and np.issubdtype(source_raw.dtype, np.bool_)
-                ):
-                    base_mask &= source_raw
+                if pd.api.types.is_bool_dtype(source_raw):
+                    base_mask &= np.asarray(source_raw, dtype=bool)
 
                 noise_std = edge.get("noise_std")
                 edge_rng = None
@@ -289,16 +291,17 @@ class Blueprint:
 
     def _apply_effect_noisy(self, target, source, kind, params, mask, noise):
         out = np.array(target, dtype=float)
-        src = np.asarray(source, dtype=float)
         n = noise[mask]
+        # Only the source-dependent kinds cast to float, so a non-numeric source
+        # (category, string) stays usable for the kinds that ignore it.
         if kind == "flat":
             out[mask] += params * n
         elif kind == "pct":
             out[mask] *= 1.0 + params * n
         elif kind == "per_unit":
-            out[mask] += params * n * src[mask]
+            out[mask] += params * n * np.asarray(source, dtype=float)[mask]
         elif kind == "per_unit_pct":
-            out[mask] *= 1.0 + params * n * src[mask]
+            out[mask] *= 1.0 + params * n * np.asarray(source, dtype=float)[mask]
         elif kind == "multiply":
             out[mask] *= params * n
         else:
@@ -306,7 +309,7 @@ class Blueprint:
             if kind == "set":
                 out[mask] = params
             elif kind == "set_source":
-                out[mask] = src[mask]
+                out[mask] = np.asarray(source, dtype=float)[mask]
         return out
 
     def _resolve_condition(self, when, df: pd.DataFrame) -> np.ndarray:

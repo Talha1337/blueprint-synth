@@ -571,3 +571,142 @@ class TestInfluenceVariability:
         bp.add_influence(Influence("x").on("y", fn=old_fn, noise_std=0.1))
         bp.emit()
         assert len(results) > 0  # fn was called without error
+
+
+class TestCategoricalInfluenceSource:
+    """Influences driven by a non-numeric source column.
+
+    Regression coverage for the pandas 3 string-dtype guard: string columns are
+    inferred as `str` rather than `object`, so a `dtype != object` check let the
+    float cast through and raised `could not convert string to float`.
+    """
+
+    def test_plain_effect_from_category_source(self):
+        bp = Blueprint(n=50, seed=1)
+        bp.add_feature(
+            Feature("region", dtype="category", values=["a", "b"]),
+            Feature("price", dtype=float, base=100, std=0),
+        )
+        bp.add_influence(Influence("region").on("price", effect="+10%"))
+        df = bp.emit()
+        assert np.allclose(df["price"], 110.0)
+
+    def test_by_class_from_category_source(self):
+        """The by_class example documented in the README."""
+        bp = Blueprint(n=900, seed=3)
+        bp.add_feature(
+            Feature("region", dtype="category", values=["urban", "suburban", "rural"]),
+            Feature("price", dtype=float, base=100000, std=0),
+        )
+        bp.add_class(
+            Class("urban", when=("region", "==", "urban")),
+            Class("suburban", when=("region", "==", "suburban")),
+        )
+        bp.add_influence(
+            Influence("region").on(
+                "price",
+                by_class={"urban": "+15%", "suburban": "+5%"},
+                effect="+0%",
+            )
+        )
+        df = bp.emit()
+        means = df.groupby("region", observed=True)["price"].mean()
+        assert means["urban"] == pytest.approx(115000.0)
+        assert means["suburban"] == pytest.approx(105000.0)
+        assert means["rural"] == pytest.approx(100000.0)
+
+    def test_by_class_without_fallback_effect(self):
+        bp = Blueprint(n=600, seed=3)
+        bp.add_feature(
+            Feature("region", dtype="category", values=["urban", "rural"]),
+            Feature("price", dtype=float, base=100000, std=0),
+        )
+        bp.add_class(Class("urban", when=("region", "==", "urban")))
+        bp.add_influence(
+            Influence("region").on("price", by_class={"urban": "+15%"})
+        )
+        df = bp.emit()
+        means = df.groupby("region", observed=True)["price"].mean()
+        assert means["urban"] == pytest.approx(115000.0)
+        assert means["rural"] == pytest.approx(100000.0)
+
+    def test_category_source_with_noise_std(self):
+        """noise_std must not eagerly cast a non-numeric source to float."""
+        bp = Blueprint(n=500, seed=2)
+        bp.add_feature(
+            Feature("region", dtype="category", values=["a", "b"]),
+            Feature("price", dtype=float, base=100.0, std=0.0),
+        )
+        bp.add_class(Class("ca", when=("region", "==", "a")))
+        bp.add_influence(
+            Influence("region").on(
+                "price", by_class={"ca": "+20%"}, effect="+0%", noise_std=0.15
+            )
+        )
+        df = bp.emit()
+        a_rows = df[df["region"] == "a"]["price"]
+        assert a_rows.std() > 0
+        assert a_rows.mean() == pytest.approx(120.0, rel=0.05)
+        assert np.allclose(df[df["region"] == "b"]["price"], 100.0)
+
+    def test_text_source_column(self):
+        bp = Blueprint(n=40, seed=5)
+        bp.add_feature(
+            Feature("label", dtype="str", template="{w}-x",
+                    pools={"w": Feature("w", dtype="category", values=["p", "q"])}),
+            Feature("score", dtype=float, base=10.0, std=0.0),
+        )
+        bp.add_influence(Influence("label").on("score", effect="*2"))
+        df = bp.emit()
+        assert np.allclose(df["score"], 20.0)
+
+    def test_bool_source_still_auto_masks(self):
+        """The bool guard was rewritten alongside the numeric guard."""
+        bp = Blueprint(n=1000, seed=7)
+        bp.add_feature(
+            Feature("has_pool", dtype=bool, p=0.3),
+            Feature("price", dtype=float, base=100000, std=0),
+        )
+        bp.add_influence(Influence("has_pool").on("price", effect="+10%"))
+        df = bp.emit()
+        changed = (df["price"] > 100001).sum()
+        assert changed == df["has_pool"].sum()
+        assert 0 < changed < 1000
+
+    def test_per_unit_from_category_source_still_raises(self):
+        """'per unit' needs a numeric source; the error is expected, not a regression."""
+        bp = Blueprint(n=5, seed=1)
+        bp.add_feature(
+            Feature("region", dtype="category", values=["a"]),
+            Feature("price", dtype=float, base=1, std=0),
+        )
+        bp.add_influence(Influence("region").on("price", effect="+2 per unit"))
+        with pytest.raises(ValueError):
+            bp.emit()
+
+
+class TestSourceDtypeGuards:
+    """The dtype predicates behind the influence source handling.
+
+    pandas 2 represents string columns as `object` and pandas 3 as `str`. Only
+    the `str` path is reachable end-to-end on pandas 3, so the `object` path is
+    pinned here directly to keep the guard correct on both versions.
+    """
+
+    def test_object_array_is_not_numeric(self):
+        arr = np.array(["a", "b"], dtype=object)
+        assert not pd.api.types.is_numeric_dtype(arr)
+        assert not pd.api.types.is_bool_dtype(arr)
+
+    def test_string_array_is_not_numeric(self):
+        arr = pd.DataFrame({"s": pd.Categorical(["a", "b"])})["s"].values
+        assert not pd.api.types.is_numeric_dtype(arr)
+        assert not pd.api.types.is_bool_dtype(arr)
+
+    def test_bool_array_detected(self):
+        arr = np.array([True, False])
+        assert pd.api.types.is_bool_dtype(arr)
+
+    def test_numeric_arrays_detected(self):
+        assert pd.api.types.is_numeric_dtype(np.array([1.0, 2.0]))
+        assert pd.api.types.is_numeric_dtype(np.array([1, 2]))
