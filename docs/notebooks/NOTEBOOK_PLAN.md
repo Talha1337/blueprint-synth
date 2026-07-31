@@ -82,18 +82,18 @@ Comprehensive, example-driven Jupyter notebook series covering every aspect of t
 
 ## Notebook 7 — Presets & Recipes
 
-- [ ] Philosophy: presets are just Python convenience wrappers
-- [ ] Class presets walkthrough with examples:
-  - [ ] `RandomClass`
-  - [ ] `HighValueClass`
-  - [ ] `LowValueClass`
-  - [ ] `OutlierClass`
-- [ ] Influence presets walkthrough with examples:
-  - [ ] `ScalesWith`
-  - [ ] `CorrelatedWith`
-  - [ ] `Caps`
-- [ ] Combining presets with custom components
-- [ ] When to use presets vs. raw API
+- [x] Philosophy: presets are just Python convenience wrappers
+- [x] Class presets walkthrough with examples:
+  - [x] `RandomClass`
+  - [x] `HighValueClass`
+  - [x] `LowValueClass`
+  - [x] `OutlierClass`
+- [x] Influence presets walkthrough with examples:
+  - [x] `ScalesWith`
+  - [x] `CorrelatedWith`
+  - [x] `Caps`
+- [x] Combining presets with custom components
+- [x] When to use presets vs. raw API
 
 ## Notebook 8 — Realistic Worked Example
 
