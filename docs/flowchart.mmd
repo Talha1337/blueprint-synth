@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph build["1. Define the blueprint"]
+        A["Start a blueprint<br/>Blueprint(n, seed)"]
+        B["Register the columns you want to generate<br/>add_feature()"]
+        C["Register row groups that may override feature settings<br/>add_class()"]
+        D["Register relationships where one column changes another<br/>add_influence()"]
+        A --> B --> C --> D
+    end
+
+    build --> EMIT["2. Run the generation pipeline<br/>emit()<br/><br/>Optional: describe=True prints a summary first"]
+
+    subgraph runtime["3. What emit() actually does"]
+        E["Generate starting values for every non-computed feature<br/>feature.generate()<br/>feature.apply_modifiers()<br/><br/>Derived features start at 0 so influences can build them up"]
+        F["Resolve which rows belong to each class<br/>klass.resolve_mask()<br/><br/>This uses the starting columns as the reference point"]
+        G["For each class override, regenerate only the matching rows<br/>_build_override_feature()<br/>_splice_values()<br/><br/>Non-matching rows stay unchanged"]
+        H["Work out dependency order for influence chains<br/>_topological_order() / DAG.topological_sort()<br/><br/>Example: sqft → price → tax means price must be updated before tax"]
+        I["Apply influences to each target column in that order<br/>_apply_influences()<br/>parse_effect() / _apply_effect()<br/><br/>Respects when=, by_class=, boolean sources, noise_std, and fn="]
+        J["Compute formula columns last from the fully updated data<br/>formula(df)<br/><br/>Computed columns can see class overrides and influence results"]
+        E --> F --> G --> H --> I --> J
+    end
+
+    EMIT --> E
+    J --> OUT["Return the pandas DataFrame<br/><br/>emit(manifest=...) can also write metadata"]

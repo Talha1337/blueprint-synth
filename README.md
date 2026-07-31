@@ -21,6 +21,12 @@ df = (
 )
 ```
 
+## How it works
+
+![Blueprint flowchart](https://raw.githubusercontent.com/dpforesi/blueprint-synth/main/docs/flowchart.svg)
+
+`emit()` runs the pipeline in this order: generate starting values, resolve class membership, regenerate overridden rows, determine dependency order for influence chains, apply influences, then compute formula columns last.
+
 ## Why Blueprint?
 
 Most synthetic data tools generate columns independently. Blueprint lets you specify **why** one column affects another — and preserves those relationships in the output:
@@ -28,7 +34,7 @@ Most synthetic data tools generate columns independently. Blueprint lets you spe
 - **Features** — numeric, boolean, categorical, datetime, text/template, computed, and derived columns
 - **Classes** — named population segments that override feature parameters for a subset of rows
 - **Influences** — causal edges (`source → target`) with rich effect types, optional row-level noise, class-conditional behavior, and gating conditions
-- **DAG** — dependencies are topologically sorted so multi-hop chains always evaluate in the right order
+- **Dependency graph** — influence chains are ordered so source columns are updated before columns that depend on them, which keeps chains like `sqft → price → tax` consistent
 - **Reproducibility** — every run with the same `seed` produces identical data; influence noise has its own deterministic sub-seed per edge
 
 ## Installation
@@ -43,6 +49,16 @@ Requires Python 3.10+ and only depends on `numpy` and `pandas`.
 import blueprint
 ```
 
+### Coding agent support
+
+Blueprint ships an [Agent Skill](https://code.claude.com/docs/en/skills) that teaches Claude Code and other compatible agents how to use this library — the effect-string grammar, the `derived` accumulator idiom, and the failure modes that produce wrong data rather than errors. Install it once after pip:
+
+```bash
+blueprint-synth install-skill
+```
+
+That copies the skill to `~/.claude/skills/blueprint-synth/`. Use `--dest` for a different location and `--force` to overwrite an existing copy.
+
 ## Feature overview
 
 ### Features
@@ -52,7 +68,7 @@ Feature("age",       dtype=int,        base=35,   std=10,  clip=(18, 80))
 Feature("active",    dtype=bool,        p=0.7)
 Feature("tier",      dtype="category",  values=["bronze", "silver", "gold"], weights=[5, 3, 1])
 Feature("joined",    dtype="datetime",  start="2020-01-01", end="2024-12-31")
-Feature("user_id",   dtype="id",        style="uuid")
+Feature("user_id",   dtype="id",        style="uuid4")   # or "uuid1", "sequential", "prefixed"
 Feature("score",     dtype="computed",  formula=lambda df: df["a"] * 2 + df["b"])
 Feature("revenue",   dtype=float,       base=0, std=0, derived=True)  # accumulates from influences only
 ```
@@ -110,12 +126,13 @@ The `docs/notebooks/` directory contains a step-by-step notebook series covering
 
 | Notebook | Topic |
 |---|---|
-| [01 — Getting Started](docs/notebooks/01_getting_started.ipynb) | Installation, minimal example, reproducibility |
-| [02 — Features Deep Dive](docs/notebooks/02_features_deep_dive.ipynb) | All dtype options, modifiers, computed & derived columns |
-| [03 — Classes](docs/notebooks/03_classes.ipynb) | Population segments, condition types, presets |
-| [04 — Influences](docs/notebooks/04_influences.ipynb) | Effect strings, by_class, when=, fn=, noise_std, presets |
-| [05 — The Dependency DAG](docs/notebooks/05_dependency_dag.ipynb) | Topological sort, cycle detection, visualization |
-| [06 — Assembly & Emission](docs/notebooks/06_assembly_and_emission.ipynb) | Blueprint construction, validate, describe, emit, output formats |
+| [01 — Getting Started](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/01_getting_started.ipynb) | Installation, minimal example, reproducibility |
+| [02 — Features Deep Dive](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/02_features_deep_dive.ipynb) | All dtype options, modifiers, computed & derived columns |
+| [03 — Classes](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/03_classes.ipynb) | Population segments, condition types, presets |
+| [04 — Influences](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/04_influences.ipynb) | Effect strings, by_class, when=, fn=, noise_std, presets |
+| [05 — The Dependency DAG](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/05_dependency_dag.ipynb) | Topological sort, cycle detection, visualization |
+| [06 — Assembly & Emission](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/06_assembly_and_emission.ipynb) | Blueprint construction, validate, describe, emit, output formats |
+| [07 — Presets & Recipes](https://github.com/dpforesi/blueprint-synth/blob/main/docs/notebooks/07_presets_and_recipes.ipynb) | Class and influence presets, starter recipes |
 
 Note that the notebooks are still a work in progress, but should be completed soon. Thank you for your patience.
 
@@ -134,4 +151,4 @@ bp.add_influence(Caps("experience", "salary", threshold=10, decay=0.05))
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/dpforesi/blueprint-synth/blob/main/LICENSE).

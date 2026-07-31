@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1720" viewBox="0 0 1200 1720" role="img" aria-labelledby="title desc">
+  <title id="title">Blueprint generation pipeline</title>
+  <desc id="desc">Flowchart showing how a Blueprint is defined, how emit generates starting columns, resolves classes, applies overrides, orders influence chains, applies influences, computes formula columns, and returns a pandas DataFrame.</desc>
+  <defs>
+    <style>
+      .bg { fill: #fcfaf5; }
+      .panel { fill: #fffdf8; stroke: #d6d3d1; stroke-width: 2; rx: 24; }
+      .box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 18; }
+      .pill { fill: #ecfeff; stroke: #0f766e; stroke-width: 2.5; rx: 12; }
+      .tag { fill: #134e4a; }
+      .arrow { stroke: #c2410c; stroke-width: 3.5; fill: none; stroke-linecap: round; }
+      .title { font: 700 34px Georgia, "Times New Roman", serif; fill: #111827; text-anchor: middle; }
+      .section { font: 700 22px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #ffffff; text-anchor: middle; }
+      .head { font: 700 21px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; text-anchor: middle; }
+      .body { font: 16px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #334155; text-anchor: middle; }
+      .code { font: 600 15px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; fill: #7c2d12; text-anchor: middle; }
+      .out { font: 700 20px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; text-anchor: middle; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#c2410c"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="1720"/>
+  <text class="title" x="600" y="60">How Blueprint Builds a DataFrame</text>
+
+  <rect class="tag" x="430" y="95" width="340" height="42" rx="21"/>
+  <text class="section" x="600" y="123">1. Define the blueprint</text>
+
+  <rect class="box" x="50" y="170" width="250" height="112" rx="18"/>
+  <text class="head" x="175" y="205">Start a blueprint</text>
+  <text class="code" x="175" y="237">Blueprint(n, seed)</text>
+
+  <rect class="box" x="325" y="170" width="250" height="112" rx="18"/>
+  <text class="head" x="450" y="199">Register the columns</text>
+  <text class="body" x="450" y="224">you want to generate</text>
+  <text class="code" x="450" y="252">add_feature()</text>
+
+  <rect class="box" x="600" y="170" width="250" height="112" rx="18"/>
+  <text class="head" x="725" y="199">Register row groups</text>
+  <text class="body" x="725" y="224">that may override feature settings</text>
+  <text class="code" x="725" y="252">add_class()</text>
+
+  <rect class="box" x="875" y="170" width="275" height="112" rx="18"/>
+  <text class="head" x="1012.5" y="199">Register relationships</text>
+  <text class="body" x="1012.5" y="224">where one column changes another</text>
+  <text class="code" x="1012.5" y="252">add_influence()</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 300 226 L 325 226"/>
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 575 226 L 600 226"/>
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 850 226 L 875 226"/>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 300 L 600 338"/>
+  <rect class="pill" x="370" y="350" width="460" height="90" rx="44"/>
+  <text class="head" x="600" y="380">2. Run the generation pipeline</text>
+  <text class="code" x="600" y="408">emit()</text>
+  <text class="body" x="600" y="430">Optional: describe=True prints a summary first</text>
+
+  <rect class="tag" x="405" y="470" width="390" height="42" rx="21"/>
+  <text class="section" x="600" y="498">3. What emit() actually does</text>
+
+  <rect class="panel" x="120" y="535" width="960" height="1055" rx="24"/>
+
+  <rect class="box" x="180" y="575" width="840" height="118" rx="18"/>
+  <text class="head" x="600" y="608">Generate starting values for every non-computed feature</text>
+  <text class="code" x="600" y="636">feature.generate() and feature.apply_modifiers()</text>
+  <text class="body" x="600" y="664">Derived features start at 0 so influences can build them up</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 694 L 600 738"/>
+
+  <rect class="box" x="180" y="742" width="840" height="106" rx="18"/>
+  <text class="head" x="600" y="775">Resolve which rows belong to each class</text>
+  <text class="code" x="600" y="803">klass.resolve_mask()</text>
+  <text class="body" x="600" y="829">This uses the starting columns as the reference point</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 848 L 600 892"/>
+
+  <rect class="box" x="180" y="896" width="840" height="118" rx="18"/>
+  <text class="head" x="600" y="929">For each class override, regenerate only the matching rows</text>
+  <text class="code" x="600" y="957">_build_override_feature() and _splice_values()</text>
+  <text class="body" x="600" y="985">Non-matching rows stay unchanged</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 1014 L 600 1058"/>
+
+  <rect class="box" x="180" y="1062" width="840" height="136" rx="18"/>
+  <text class="head" x="600" y="1095">Work out dependency order for influence chains</text>
+  <text class="code" x="600" y="1123">_topological_order() and DAG.topological_sort()</text>
+  <text class="body" x="600" y="1151">Example: sqft → price → tax means update price before tax</text>
+  <text class="body" x="600" y="1175">The ordering is about dependent columns, not rows</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 1198 L 600 1242"/>
+
+  <rect class="box" x="180" y="1246" width="840" height="136" rx="18"/>
+  <text class="head" x="600" y="1279">Apply influences to each target column in that order</text>
+  <text class="code" x="600" y="1307">_apply_influences(), parse_effect(), and _apply_effect()</text>
+  <text class="body" x="600" y="1335">Respects when=, by_class=, boolean sources, noise_std, and fn=</text>
+  <text class="body" x="600" y="1359">Later targets can use values updated by earlier influence steps</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 1382 L 600 1426"/>
+
+  <rect class="box" x="180" y="1430" width="840" height="118" rx="18"/>
+  <text class="head" x="600" y="1463">Compute formula columns last from the fully updated data</text>
+  <text class="code" x="600" y="1491">formula(df)</text>
+  <text class="body" x="600" y="1519">Computed columns can see class overrides and influence results</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 600 1548 L 600 1592"/>
+
+  <rect class="pill" x="325" y="1600" width="550" height="88" rx="44"/>
+  <text class="out" x="600" y="1635">Return the pandas DataFrame</text>
+  <text class="body" x="600" y="1663">emit(manifest=...) can also write metadata</text>
+</svg>
