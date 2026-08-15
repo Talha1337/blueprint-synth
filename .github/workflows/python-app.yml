@@ -42,7 +42,7 @@ jobs:
       - name: Display environment versions
         run: |
           uv run python -c "import sys; print('Python:', sys.version)"
-          uv run python --with "${{ matrix.pandas-version }}" -c "import pandas; print('Pandas:', pandas.__version__)"
+          uv run --with "${{ matrix.pandas-version }}" python -c "import pandas; print('Pandas:', pandas.__version__)"
 
       # 4. Run pytest
       - name: Test with pytest
