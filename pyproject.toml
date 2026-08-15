@@ -11,6 +11,9 @@ license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = ["numpy", "pandas", "pytest"]
 
+[project.optional-dependencies]
+test = ["pytest"]
+
 [project.urls]
 Homepage = "https://github.com/dpforesi/blueprint-synth"
 Repository = "https://github.com/dpforesi/blueprint-synth"
