@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-extras
-          uv pip install "${{ matrix.pandas-version }}"
+          uv pip install --with "${{ matrix.pandas-version }}" pytest
 
       # 3. Verify installed versions
       - name: Display environment versions
